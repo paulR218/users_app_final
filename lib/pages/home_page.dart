@@ -97,7 +97,7 @@ class _HomePageState extends State<HomePage> {
   getUserInfoAndCheckBlockStatus() async {
     DatabaseReference usersRef = FirebaseDatabase.instance.ref()
         .child("users")
-         .child(FirebaseAuth.instance.currentUser!.uid);
+        .child(FirebaseAuth.instance.currentUser!.uid);
     await usersRef.once().then((snap)
     {
       if(snap.snapshot.value != null)
@@ -107,6 +107,7 @@ class _HomePageState extends State<HomePage> {
           setState(() {
             userName = (snap.snapshot.value as Map)["name"];
             userPhone = (snap.snapshot.value as Map)["phone"];
+            userEmail = (snap.snapshot.value as Map)["email"];
           });
         }
         else
@@ -171,7 +172,7 @@ class _HomePageState extends State<HomePage> {
     polyLineSet.clear();
     setState(() {
       Polyline polyline = Polyline(
-          polylineId: const PolylineId("polylineID"),
+        polylineId: const PolylineId("polylineID"),
         color: Colors.pink,
         points: polyLineCoordinates,
         jointType: JointType.round,
@@ -198,8 +199,8 @@ class _HomePageState extends State<HomePage> {
     }
     else if(pickupGeoGraphicCoordinates.latitude > dropOffDestinationGeoGraphicCoordinates.latitude){
       boundsLatlng = LatLngBounds(
-          southwest: LatLng(dropOffDestinationGeoGraphicCoordinates.latitude, pickupGeoGraphicCoordinates.longitude),
-          northeast: LatLng(pickupGeoGraphicCoordinates.latitude,dropOffDestinationGeoGraphicCoordinates.longitude),
+        southwest: LatLng(dropOffDestinationGeoGraphicCoordinates.latitude, pickupGeoGraphicCoordinates.longitude),
+        northeast: LatLng(pickupGeoGraphicCoordinates.latitude,dropOffDestinationGeoGraphicCoordinates.longitude),
       );
     }
     else{
@@ -230,12 +231,12 @@ class _HomePageState extends State<HomePage> {
 
     //add the circles from pickup and destination
     Circle pickUpPointCircle = Circle(
-      circleId: const CircleId("pickupCircleID"),
-      strokeColor: Colors.blue,
-      strokeWidth: 4,
-      radius: 14,
-      center: pickupGeoGraphicCoordinates,
-      fillColor: Colors.pink
+        circleId: const CircleId("pickupCircleID"),
+        strokeColor: Colors.blue,
+        strokeWidth: 4,
+        radius: 14,
+        center: pickupGeoGraphicCoordinates,
+        fillColor: Colors.pink
     );
 
     Circle dropOffDestinationPointCircle = Circle(
@@ -308,7 +309,7 @@ class _HomePageState extends State<HomePage> {
     for(OnlineNearbyDrivers eachOnlineNearbyDriver in ManageDriversMethod.nearbyOnlineDriversList){
       LatLng driverCurrentPosition = LatLng(eachOnlineNearbyDriver.latDriver!, eachOnlineNearbyDriver.lngDriver!);
       Marker driverMarker = Marker(
-          markerId: MarkerId("driver ID = ${eachOnlineNearbyDriver.uidDriver}"),
+        markerId: MarkerId("driver ID = ${eachOnlineNearbyDriver.uidDriver}"),
         position: driverCurrentPosition,
         icon: carIconNearbyDriver!,
       );
@@ -322,7 +323,7 @@ class _HomePageState extends State<HomePage> {
 
   initializeGeoFireListener(){
     Geofire.initialize("onlineDrivers");
-    Geofire.queryAtLocation(currentPositionOfUser!.latitude, currentPositionOfUser!.longitude, 22)!
+    Geofire.queryAtLocation(currentPositionOfUser!.latitude, currentPositionOfUser!.longitude, 40)!
         .listen((driverEvent)
     {
       if(driverEvent != null){
@@ -369,9 +370,6 @@ class _HomePageState extends State<HomePage> {
   makeTripRequest(){
     tripRequestRef = FirebaseDatabase.instance.ref().child("tripRequests").push();
 
-    var dropOffLocationPlaceName = "Mega Pacific Freight Logistics, Inc.";
-    var dropOffLatLng = const LatLng(14.481952540896081, 121.05271356403014);
-
     var pickUpLocation = Provider.of<AppInfo>(context, listen: false).pickUpLocation;
     var dropOffDestinationLocation = Provider.of<AppInfo>(context, listen: false).dropOffLocation;
 
@@ -386,7 +384,7 @@ class _HomePageState extends State<HomePage> {
     };
 
     Map driverCoordinates = {
-       "latitude":"",
+      "latitude":"",
       "longitude":"",
     };
 
@@ -394,6 +392,7 @@ class _HomePageState extends State<HomePage> {
       "tripID": tripRequestRef!.key,
       "publishDateTime" : DateTime.now().toString(),
       "userName" : userName,
+      "userEmail" : userEmail,
       "userPhone": userPhone,
       "userID": userID,
       "pickUpLatLng": pickUpCoordinatesMap,
@@ -420,7 +419,7 @@ class _HomePageState extends State<HomePage> {
       }
 
       if((eventSnapshot.snapshot.value as Map)["driverName"] != null){
-         nameDriver = (eventSnapshot.snapshot.value as Map)["driverName"];
+        nameDriver = (eventSnapshot.snapshot.value as Map)["driverName"];
       }
       if((eventSnapshot.snapshot.value as Map)["driverPhone"] != null){
         phoneNumberDriver = (eventSnapshot.snapshot.value as Map)["driverPhone"];
@@ -460,37 +459,23 @@ class _HomePageState extends State<HomePage> {
       }
 
       if(status == "accepted"){
-
         displayTripDetailsContainer();
-
         Geofire.stopListener();
-
-        /*//remove drivers marker
-        setState(() {
-          markerSet.removeWhere((element) => element.markerId.value.contains("driver"));
-        });*/
       }
 
       if(status == "acceptMore"){
-
         displayTripDetailsContainer();
-
         Geofire.stopListener();
-
-        /*//remove drivers marker
-        setState(() {
-          markerSet.removeWhere((element) => element.markerId.value.contains("driver"));
-        });*/
       }
 
       if(status == "ended"){
         showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) => InfoDialog(
-            title: "Ride Ended",
-            description: "Your ride has ended. Thank you for choosing us as your delivery partner.",
-          )
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) => InfoDialog(
+              title: "Ride Ended",
+              description: "Your ride has ended. Thank you for choosing us as your delivery partner.",
+            )
         );
         resetAppNow();
       }
@@ -551,25 +536,24 @@ class _HomePageState extends State<HomePage> {
 
   getLiveLocationUpdatesOfDriver(LatLng positionDriver)
   {
+    driverCurrentPosition = positionDriver;
 
-      driverCurrentPosition = positionDriver;
+    LatLng driverCurrentPositionLatLng = LatLng(driverCurrentPosition!.latitude, driverCurrentPosition!.longitude);
 
-      LatLng driverCurrentPositionLatLng = LatLng(driverCurrentPosition!.latitude, driverCurrentPosition!.longitude);
+    Marker carMarker = Marker(
+      markerId: const MarkerId("carMarkerID"),
+      position: driverCurrentPositionLatLng,
+      icon: carIconNearbyDriver!,
+      infoWindow: const InfoWindow(title: "My Location"),
+    );
 
-      Marker carMarker = Marker(
-        markerId: const MarkerId("carMarkerID"),
-        position: driverCurrentPositionLatLng,
-        icon: carIconNearbyDriver!,
-        infoWindow: const InfoWindow(title: "My Location"),
-      );
+    setState(() {
+      CameraPosition cameraPosition = CameraPosition(target: driverCurrentPositionLatLng, zoom: 16);
+      controllerGoogleMap!.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
 
-      setState(() {
-        CameraPosition cameraPosition = CameraPosition(target: driverCurrentPositionLatLng, zoom: 16);
-        controllerGoogleMap!.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
-
-        markerSet.removeWhere((element) => element.markerId.value == "carMarkerID");
-        markerSet.add(carMarker);
-      });
+      markerSet.removeWhere((element) => element.markerId.value == "carMarkerID");
+      markerSet.add(carMarker);
+    });
 
   }
 
@@ -613,10 +597,10 @@ class _HomePageState extends State<HomePage> {
   sendNotificationToDriver(OnlineNearbyDrivers currentDriver){
     //update drivers new trip status
     DatabaseReference currentDriverRef = FirebaseDatabase.instance
-    .ref()
-    .child("drivers")
-    .child(currentDriver.uidDriver.toString())
-    .child("newTripStatus");
+        .ref()
+        .child("drivers")
+        .child(currentDriver.uidDriver.toString())
+        .child("newTripStatus");
 
     currentDriverRef.set(tripRequestRef!.key);
 
@@ -700,50 +684,50 @@ class _HomePageState extends State<HomePage> {
         color: Colors.amber,
         child: Drawer(
           backgroundColor: Colors.white10,
-            child: ListView(
-              children: [
+          child: ListView(
+            children: [
 
               //header
               Container(
-                  color: Colors.amber,
-                  height: 160,
-                  child: DrawerHeader(
-                    decoration: const BoxDecoration(
-                      color: Colors.amber,
-                    ),
-                    child: Row(
-                      children: [
-                        Image.asset(
-                          "assets/images/avatarman.png",
-                          width: 60,
-                          height: 60,
-                        ),
+                color: Colors.amber,
+                height: 160,
+                child: DrawerHeader(
+                  decoration: const BoxDecoration(
+                    color: Colors.amber,
+                  ),
+                  child: Row(
+                    children: [
+                      Image.asset(
+                        "assets/images/avatarman.png",
+                        width: 60,
+                        height: 60,
+                      ),
 
-                        const SizedBox(width : 16,),
+                      const SizedBox(width : 16,),
 
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              userName,
-                              style: const TextStyle(
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            userName,
+                            style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.indigo
-                              ),
                             ),
-                            const Text(
-                              "Profile",
-                              style: TextStyle(
-                                color: Colors.indigo,
-                              ),
-                            )
-                          ],
-                        ),
-                      ],
-                    ),
+                          ),
+                          const Text(
+                            "Profile",
+                            style: TextStyle(
+                              color: Colors.indigo,
+                            ),
+                          )
+                        ],
+                      ),
+                    ],
                   ),
-            ),
+                ),
+              ),
 
               const Divider(
                 height: 1,
@@ -755,20 +739,20 @@ class _HomePageState extends State<HomePage> {
 
               //body
 
-                GestureDetector(
-                  onTap: (){
-                    Navigator.push(context, MaterialPageRoute(builder: (c) => const TripsHistoryPage()));
-                  },
-                  child: ListTile(
-                    leading: IconButton(
-                        onPressed: (){
-                          Navigator.push(context, MaterialPageRoute(builder: (c) => const TripsHistoryPage()));
-                        },
-                        icon: const Icon(Icons.history, color: Colors.indigo,)
-                    ),
-                    title: const Text("Trip History", style: TextStyle(color: Colors.indigo),),
+              GestureDetector(
+                onTap: (){
+                  Navigator.push(context, MaterialPageRoute(builder: (c) => const TripsHistoryPage()));
+                },
+                child: ListTile(
+                  leading: IconButton(
+                      onPressed: (){
+                        Navigator.push(context, MaterialPageRoute(builder: (c) => const TripsHistoryPage()));
+                      },
+                      icon: const Icon(Icons.history, color: Colors.indigo,)
                   ),
+                  title: const Text("Trip History", style: TextStyle(color: Colors.indigo),),
                 ),
+              ),
 
               ///about page
               GestureDetector(
@@ -803,9 +787,9 @@ class _HomePageState extends State<HomePage> {
 
                 ),
               ),
-              ],
-            ),
-       ),
+            ],
+          ),
+        ),
       ),
       body: Stack(
         children: [
@@ -844,17 +828,17 @@ class _HomePageState extends State<HomePage> {
               },
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: const
-                  [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 5,
-                      spreadRadius: 0.5,
-                      offset: Offset(0.7, 0.7),
-                    )
-                  ]
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: const
+                    [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 5,
+                        spreadRadius: 0.5,
+                        offset: Offset(0.7, 0.7),
+                      )
+                    ]
                 ),
                 child: CircleAvatar(
                   backgroundColor: Colors.amber,
@@ -885,18 +869,18 @@ class _HomePageState extends State<HomePage> {
                       if(responseFromSearchPage == "pickUpSelected") {
                         displayUserRideDetailsContainer();
                       }
-                      },
+                    },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.amber,
                         shape: const CircleBorder(),
                         padding: const EdgeInsets.all(24),
 
                       ),
-                     child: const Icon(
-                      Icons.search,
-                      color: Colors.white,
-                      size: 25,
-                     ),
+                      child: const Icon(
+                        Icons.search,
+                        color: Colors.white,
+                        size: 25,
+                      ),
                     ),
 
                     ElevatedButton(onPressed: (){
@@ -943,16 +927,16 @@ class _HomePageState extends State<HomePage> {
             child: Container(
               height: rideDetailsContainerHeight,
               decoration: const BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.only(topLeft: Radius.circular(15), topRight: Radius.circular(15)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.white12,
-                    blurRadius: 15.0,
-                    spreadRadius: 0.5,
-                    offset: Offset(0.7, 0.7),
-                  )
-                ]
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.only(topLeft: Radius.circular(15), topRight: Radius.circular(15)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white12,
+                      blurRadius: 15.0,
+                      spreadRadius: 0.5,
+                      offset: Offset(0.7, 0.7),
+                    )
+                  ]
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 18),
@@ -960,80 +944,79 @@ class _HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Padding(padding: const EdgeInsets.only(left: 16, right: 16),
-                    child: SizedBox(
-                      height: 195,
-                      child: Card(
-                        elevation: 10,
-                        child: Container(
-                          width: MediaQuery.of(context).size.width * 0.70,
-                          color: Colors.black45,
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 8, bottom: 8),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 8, right: 8),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        (tripDirectionDetailsInfo != null) ? tripDirectionDetailsInfo!.distanceTextString! :"0 km",
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          color: Colors.white70,
-                                          fontWeight: FontWeight.bold,
+                      child: SizedBox(
+                        height: 195,
+                        child: Card(
+                          elevation: 10,
+                          child: Container(
+                            width: MediaQuery.of(context).size.width * 0.70,
+                            color: Colors.black45,
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 8, bottom: 8),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 8, right: 8),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          (tripDirectionDetailsInfo != null) ? tripDirectionDetailsInfo!.distanceTextString! :"0 km",
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.white70,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
-                                      ),
-                                      Text(
-                                        (tripDirectionDetailsInfo != null) ? tripDirectionDetailsInfo!.durationTextString! :"0 sec",
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          color: Colors.white70,
-                                          fontWeight: FontWeight.bold,
+                                        Text(
+                                          (tripDirectionDetailsInfo != null) ? tripDirectionDetailsInfo!.durationTextString! :"0 sec",
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.white70,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
 
 
-                                GestureDetector(
-                                  onTap: (){
-                                    setState(() {
-                                      stateOfApp = "requesting";
-                                    });
+                                  GestureDetector(
+                                    onTap: (){
+                                      setState(() {
+                                        stateOfApp = "requesting";
+                                      });
+                                      displayRequestContainer();
 
-                                    displayRequestContainer();
+                                      //get nearest available online driver
+                                      availableNearbyOnlineDriversList = ManageDriversMethod.nearbyOnlineDriversList;
 
-                                    //get nearest available online driver
-                                    availableNearbyOnlineDriversList = ManageDriversMethod.nearbyOnlineDriversList;
-
-                                    //search driver
-                                    searchDriver();
-                                  },
-                                  child: Image.asset(
+                                      //search driver
+                                      searchDriver();
+                                    },
+                                    child: Image.asset(
                                       "assets/images/uberexec.png",
-                                    height: 122,
-                                    width: 122,
+                                      height: 122,
+                                      width: 122,
+                                    ),
                                   ),
-                                ),
 
-                                //estimated fare amount
-                                const Text(
-                                  "\$ 12",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.white70,
-                                    fontWeight: FontWeight.bold,
+                                  //estimated fare amount
+                                  const Text(
+                                    "\$ 12",
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.white70,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),)
+                      ),)
                   ],
                 ),
               ),
@@ -1052,10 +1035,10 @@ class _HomePageState extends State<HomePage> {
                 borderRadius: BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 15.0,
-                    spreadRadius: 0.5,
-                    offset: Offset(0.7,0.7)
+                      color: Colors.black26,
+                      blurRadius: 15.0,
+                      spreadRadius: 0.5,
+                      offset: Offset(0.7,0.7)
                   ),
                 ],
               ),
@@ -1103,57 +1086,57 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           ///end request container
-          
-          Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: Container(
-            height: tripContainerHeight,
-            decoration: const BoxDecoration(
-              color: Colors.black87,
-              borderRadius: BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.white24,
-                    blurRadius: 15.0,
-                    spreadRadius: 0.5,
-                    offset: Offset(0.7,0.7)
-                ),
-              ],
-            ),
-            child:  Padding(
-              padding:  const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // trip status display
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        tripStatusDisplay,
-                        style: const TextStyle(
-                          fontSize: 19,
-                          color: Colors.grey
-                        ),
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 19,),
 
-                  const Divider(
-                    height: 1,
-                    color: Colors.white70,
-                    thickness: 1,
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              height: tripContainerHeight,
+              decoration: const BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.white24,
+                      blurRadius: 15.0,
+                      spreadRadius: 0.5,
+                      offset: Offset(0.7,0.7)
                   ),
-                  const SizedBox(height: 19,),
-                  //image - driver name and driver car details
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      /*ClipOval(
+                ],
+              ),
+              child:  Padding(
+                padding:  const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // trip status display
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          tripStatusDisplay,
+                          style: const TextStyle(
+                              fontSize: 19,
+                              color: Colors.grey
+                          ),
+                        )
+                      ],
+                    ),
+                    const SizedBox(height: 19,),
+
+                    const Divider(
+                      height: 1,
+                      color: Colors.white70,
+                      thickness: 1,
+                    ),
+                    const SizedBox(height: 19,),
+                    //image - driver name and driver car details
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        /*ClipOval(
                         child: Image.network(
                           photoDriver == ''
                               ? ""
@@ -1164,80 +1147,80 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),*/
 
-                      const SizedBox(width: 8,),
+                        const SizedBox(width: 8,),
 
 
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            nameDriver,
-                            style: const TextStyle(fontSize: 20, color: Colors.grey),
-                          ),
-                          Text(
-                            carDetailsDriver,
-                            style: const TextStyle(fontSize: 14, color: Colors.grey),
-                          ),
-                        ],
-                      )
-                    ],
-                  ),
-
-                  const SizedBox(height: 19,),
-
-                  const Divider(
-                    height: 1,
-                    color: Colors.white70,
-                    thickness: 1,
-                  ),
-
-                  const SizedBox(height: 19,),
-
-                  //call driver btn
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      GestureDetector(
-                        onTap: (){
-                          launchUrl(Uri.parse("tel://$phoneNumberDriver"));
-                        },
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              height: 50,
-                              width: 50,
-                              decoration: BoxDecoration(
-                                borderRadius: const BorderRadius.all(Radius.circular(25)),
-                                border: Border.all(
-                                  width: 1,
+                            Text(
+                              nameDriver,
+                              style: const TextStyle(fontSize: 20, color: Colors.grey),
+                            ),
+                            Text(
+                              carDetailsDriver,
+                              style: const TextStyle(fontSize: 14, color: Colors.grey),
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
+
+                    const SizedBox(height: 19,),
+
+                    const Divider(
+                      height: 1,
+                      color: Colors.white70,
+                      thickness: 1,
+                    ),
+
+                    const SizedBox(height: 19,),
+
+                    //call driver btn
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        GestureDetector(
+                          onTap: (){
+                            launchUrl(Uri.parse("tel://$phoneNumberDriver"));
+                          },
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Container(
+                                height: 50,
+                                width: 50,
+                                decoration: BoxDecoration(
+                                  borderRadius: const BorderRadius.all(Radius.circular(25)),
+                                  border: Border.all(
+                                    width: 1,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.phone,
                                   color: Colors.white,
                                 ),
                               ),
-                              child: const Icon(
-                                Icons.phone,
-                                color: Colors.white,
-                              ),
-                            ),
 
-                            const SizedBox(height: 11,),
+                              const SizedBox(height: 11,),
 
-                            const Text(
-                              "Call",
-                              style: TextStyle(
-                                color: Colors.grey
+                              const Text(
+                                "Call",
+                                style: TextStyle(
+                                    color: Colors.grey
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      )
-                    ],
-                  )
-                ],
+                            ],
+                          ),
+                        )
+                      ],
+                    )
+                  ],
+                ),
               ),
             ),
-          ),
           ),
         ],
       ),
