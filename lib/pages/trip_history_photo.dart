@@ -11,17 +11,17 @@ class tripPhoto extends StatelessWidget {
         title: const Text("Photo Proof"),
       ),
       body: FittedBox(
-        child:
-            photo == "No photo" ?
-            const Text(
-                "No photo is uploaded",
-              style: TextStyle(
+          child:
+          photo == null ?
+          const Text(
+            "No photo is uploaded",
+            style: TextStyle(
                 color: Colors.black,
                 fontWeight: FontWeight.bold,
                 fontSize: 30
-              ),
-            )
-        : Image.network(photo!)
+            ),
+          )
+              : Image.network(photo!)
       ),
     );
   }
